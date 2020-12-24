@@ -1,0 +1,35 @@
+[MASTER]
+
+# Use multiple processes to speed up Pylint.
+jobs=2
+# extension-pkg-whitelist=pydantic
+
+[MESSAGES CONTROL]
+
+disable=too-few-public-methods,
+  invalid-name,
+  bad-continuation,
+  inconsistent-return-statements
+
+[REPORTS]
+
+# Activate the evaluation score.
+score=no
+
+[BASIC]
+no-docstring-rgx=test_
+
+[TYPECHECK]
+# generated-members=psycopg2.errors
+
+[MISCELLANEOUS]
+
+# List of note tags to take in consideration, separated by a comma.
+# (Removed "TODO", which is assumed to be a reminder of something to do later,
+# but not so neccessary that linting should fail.  Added "DEBUG" as an indicator
+# code added for debugging and not meant to be committed.)
+notes=FIXME,XXX,DEBUG
+
+[DESIGN]
+# max-args=10
+# max-locals=20
