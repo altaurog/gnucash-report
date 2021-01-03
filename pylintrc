@@ -2,7 +2,7 @@
 
 # Use multiple processes to speed up Pylint.
 jobs=2
-# extension-pkg-whitelist=pydantic
+extension-pkg-whitelist=lxml
 
 [MESSAGES CONTROL]
 
