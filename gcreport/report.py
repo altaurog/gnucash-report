@@ -12,13 +12,15 @@ config structure:
 
 def report(config, reader):
     "extract timeseries data according to config"
-    sections = [(sd, reader.section_data(sd)) for sd in config["sections"]]
+    sections = reader.sections()
     sheets = [(sd["title"], section_sheet(sd, df)) for sd, df in sections]
-    return dict([("summary", rollup_sheet(sections))]  + sheets)
+    summary = [("summary", summary_sheet(sections))]
+    totals = [("monthly totals", totals_sheet(sections))]
+    return dict(summary + totals + sheets)
 
 
-def rollup_sheet(sections):
-    "construct sheet data for yearly rollup of all sections"
+def summary_sheet(sections):
+    "construct sheet data for yearly rollup summary of all sections"
     for secdef, df in sections:
         agg = df_round(df.resample("Y").mean())
         title = secdef["title"]
@@ -30,6 +32,17 @@ def rollup_sheet(sections):
                 yield [fullname, *agg[fullname]]
         yield ["total", *agg.sum(axis=1)]
         yield []
+
+
+def totals_sheet(sections):
+    "construct sheet data for yearly section totals"
+    for i, (secdef, df) in enumerate(sections):
+        agg = df_round(df.resample("Y").sum() / 12.0)
+        title = secdef["title"]
+        year = lambda ts: ts.year
+        if not i:
+            yield ["year", *map(year, agg.index)]
+        yield [title, *agg.sum(axis=1)]
 
 
 def section_sheet(secdef, df):

@@ -8,10 +8,13 @@ from . import gnucashxml
 
 class GCReader:
     "class for extracting splits from gnucash xml book by account and daterange"
-    def __init__(self, gnucash_path, daterange=None):
-        self.daterange = daterange
+    def __init__(self, config, gnucash_path):
+        self.config = config
         self.gcbook = gnucashxml.from_filename(gnucash_path)
 
+    def sections(self):
+        "report sections"
+        return [(sd, self.section_data(sd)) for sd in self.config["sections"]]
 
     def section_data(self, secdef):
         "aggregate data for section as a pandas DataFrame"
@@ -22,17 +25,15 @@ class GCReader:
         aggdata = {n: agg(df) for n, df in data if df is not None}
         return pd.DataFrame(aggdata).fillna(0)
 
-
     def account_data(self, fullname):
         "get account splits for given range as a pandas data Series"
         splits = list(self.get_account_splits(fullname) or [])
         if not splits:
             return
         return pd.DataFrame(
-            [(s.transaction.date, float(s.value)) for s in splits],
+            [(s.transaction.date, self.get_split_amount(s)) for s in splits],
             columns=["date", fullname],
         ).set_index("date")[fullname]
-
 
     def get_account_splits(self, fullname):
         "apply filter to all splits in account"
@@ -40,10 +41,19 @@ class GCReader:
         if account is None:
             return
         predicates = list(filter(None, [
-            daterange_predicate(self.daterange),
+            daterange_predicate(self.config["daterange"]),
         ]))
         return (s for s in account.get_all_splits() if all(p(s) for p in predicates))
 
+    def get_split_amount(self, split):
+        "get split amount, performing currency conversion"
+        currency = split.account.commodity.name
+        if currency == self.config["currency"]:
+            conversion_rate = 1.0
+        else:
+            year = split.transaction.date.year
+            conversion_rate = self.config["exchange_rates"][currency][year]
+        return float(split.quantity) * conversion_rate
 
     def find_account_by_fullname(self, fullname):
         "get account matching fullname"
